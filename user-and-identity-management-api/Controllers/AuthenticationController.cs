@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using NETCore.MailKit.Core;
 using user_and_identity_management_api.Models;
 using user_and_identity_management_api.Models.Authentication.SignUp;
+using user_management_service.Models;
 
 namespace user_and_identity_management_api.Controllers
 {
@@ -11,12 +13,14 @@ namespace user_and_identity_management_api.Controllers
     {
         private readonly UserManager<IdentityUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IConfiguration _configuration;
-        public AuthenticationController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+        private readonly IEmailService _emailService;
+       
+        public AuthenticationController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IEmailService emailService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
-            _configuration = configuration;
+            _emailService = emailService;
+          
         }
         [HttpPost]
         [Route("Register")]
@@ -67,7 +71,7 @@ namespace user_and_identity_management_api.Controllers
 
 
             }
-           
+
             if (await _roleManager.RoleExistsAsync(role))
             {
                 var result = await _userManager.CreateAsync(user, password: registeruser.Password);
@@ -81,12 +85,24 @@ namespace user_and_identity_management_api.Controllers
             await _userManager.AddToRoleAsync(user, role);
             return StatusCode(StatusCodes.Status200OK,
                 new Response { Status = "Success", Message = "User created successfully" });
+        
 
-
-            }
-       
-
-            }
         }
+        [HttpGet]
+        public  IActionResult TestEmail()
+        {
+            var message = 
+                new Message(new string[] 
+                { "peacerijim@gmail.com" }, "Test", "<h1> Subcribe to  my channel! </>");
+
+            return StatusCode(StatusCodes.Status200OK,
+               new Response { Status = "Success", Message = "Email sent successfully" });
+
+        }
+    }
+
+ 
+}
+
     
 
