@@ -5,6 +5,6 @@ namespace user_management_service.Services
 {
    public interface IEmailService
     {
-        void Send(Message message);
+        void SendEmail(Message message);
     }
 }

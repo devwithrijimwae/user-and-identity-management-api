@@ -15,13 +15,13 @@ namespace user_management_service.Services
             _emailConfig = emailConfig;
 
         }
-        public void Send(Message message)
+
+        public void SendEmail(Message message)
         {
 
 
             var emailMessage = CreateEmailMessage(message);
             sendEmail(emailMessage);
-
 
         }
         public MimeMessage CreateEmailMessage(Message message)
@@ -56,5 +56,7 @@ namespace user_management_service.Services
                 client.Dispose();
             }
         }
+
+      
     }
 }
