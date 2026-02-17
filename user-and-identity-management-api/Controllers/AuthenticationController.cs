@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -30,13 +31,13 @@ namespace user_and_identity_management_api.Controllers
     IEmailService emailService,
     IConfiguration configuration,
     SignInManager<IdentityUser> signInManager) // <-- Add <IdentityUser> here
-{
+        {
             _userManager = userManager;
             _roleManager = roleManager;
             _signInManager = signInManager;
             _emailService = emailService;
             _configuration = configuration;
-           
+
 
         }
         [HttpPost]
@@ -139,9 +140,10 @@ namespace user_and_identity_management_api.Controllers
                         new Response { Status = "Error", Message = "This user does not exist" });
 
                 }
-            } else
-            return StatusCode(StatusCodes.Status404NotFound,
-        new Response { Status = "Error", Message = "User not found" });
+            }
+            else
+                return StatusCode(StatusCodes.Status404NotFound,
+            new Response { Status = "Error", Message = "User not found" });
         }
 
         [HttpPost]
@@ -209,7 +211,7 @@ namespace user_and_identity_management_api.Controllers
         {
             var user = await _userManager.FindByNameAsync(username);
             var signin = await _signInManager.TwoFactorAuthenticatorSignInAsync(code, false, false);
-            if (signin.Succeeded) 
+            if (signin.Succeeded)
             {
                 if (user != null)
                 {
@@ -238,8 +240,26 @@ namespace user_and_identity_management_api.Controllers
                     return StatusCode(StatusCodes.Status404NotFound,
                         new Response { Status = "Error", Message = "User not found" });
                 }
+
             }
             return Unauthorized();
+        }
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("ForgotPassword")]
+        public async Task<IActionResult> ForgotPassword(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound,
+                    new Response { Status = "Error", Message = "User not found" });
+            }
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = Url.Action("ResetPassword", "Authentication", new { token, email = user.Email }, Request.Scheme);
+            await _emailService.SendAsync(user.Email, "Password Reset", $"<h1> Please reset your password by clicking on the link below: </h1><br><a href='{resetLink}'>Reset Password</a>", isHtml: true);
+            return StatusCode(StatusCodes.Status200OK,
+                new Response { Status = "Success", Message = $"Password reset link sent to {user.Email} successfully" });
         }
     }
 }

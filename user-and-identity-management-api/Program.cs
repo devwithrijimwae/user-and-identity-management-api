@@ -37,6 +37,9 @@ builder.Services.Configure<IdentityOptions>(
     Opts => Opts.SignIn.RequireConfirmedEmail = true
                     
 );
+builder.Services.Configure<DataProtectionTokenProviderOptions>(
+    Opts => Opts.TokenLifespan = TimeSpan.FromHours(10)
+);
 
 // authentication (you will likely configure JwtBearer options here)
 builder.Services.AddAuthentication(options =>
