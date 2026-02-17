@@ -22,6 +22,7 @@ namespace user_and_identity_management_api.Controllers
         private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
         private readonly SignInManager<IdentityUser> _signInManager;
+        private List<Claim> authClaims;
 
         public AuthenticationController(
     UserManager<IdentityUser> userManager,
@@ -204,70 +205,44 @@ namespace user_and_identity_management_api.Controllers
         }
         [HttpPost("login-2FA")]
         [Route("login-2FA")]
-        public async Task<IActionResult> LoginWithOTP(string code)
+        public async Task<IActionResult> LoginWithOTP(string code, string username)
         {
-            var user = await _userManager.GetUserAsync(User); // <-- Fix: get user from ClaimsPrincipal
-            var signin = await _signInManager.TwoFactorAuthenticatorSignInAsync(code, false, false); // <-- Add await
-            if (signin.Succeeded)
+            var user = await _userManager.FindByNameAsync(username);
+            var signin = await _signInManager.TwoFactorAuthenticatorSignInAsync(code, false, false);
+            if (signin.Succeeded) 
             {
-                // You may need to provide loginModel.Password or refactor this block, but for now:
-                // claimlist creation 
-                var authClaims = new List<Claim>
+                if (user != null)
                 {
-                    new Claim(ClaimTypes.Name, user.UserName),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                };
-                // add role to the list of claims
-                var userRoles = await _userManager.GetRolesAsync(user);
-                foreach (var role in userRoles)
-                {
-                    authClaims.Add(new Claim(ClaimTypes.Role, role));
+                    var authClaims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.Name, user.UserName),
+                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    };
+                    //add role to the list of claims
+                    var userRoles = await _userManager.GetRolesAsync(user);
+                    foreach (var role in userRoles)
+                    {
+                        authClaims.Add(new Claim(ClaimTypes.Role, role));
+                    }
+                    //generate token with the claims
+                    var jwttoken = GetToken(authClaims);
+                    //return the token
+                    return Ok(new
+                    {
+                        token = new JwtSecurityTokenHandler().WriteToken(jwttoken),
+                        expiration = jwttoken.ValidTo
+                    });
                 }
-                // generate token with the claims
-                var jwttoken = GetToken(authClaims);
-                // return the token
-                return Ok(new
+                else
                 {
-                    token = new JwtSecurityTokenHandler().WriteToken(jwttoken),
-                    expiration = jwttoken.ValidTo
-                });
+                    return StatusCode(StatusCodes.Status404NotFound,
+                        new Response { Status = "Error", Message = "User not found" });
+                }
             }
             return Unauthorized();
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
