@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
   <Project Path="user-and-identity-management-api/user-and-identity-management-api.csproj" />
   <Project Path="user-management-service/user-management-service.csproj" />
 </Solution>

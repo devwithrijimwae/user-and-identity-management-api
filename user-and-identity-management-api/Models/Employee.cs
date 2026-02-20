@@ -1,4 +1,4 @@
-﻿namespace user_and_identity_management_api.Controllers
+﻿namespace user_and_identity_management_api.Models
 {
     public class Employee
     {
