@@ -4,88 +4,69 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using User.Management.Service.Models;
+using User.Management.Service.Services;
 using user_and_identity_management_api.Data;
-using user_management_service.Models;
-using user_management_service.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configuration
 var configuration = builder.Configuration;
-
-// --- Validate connection string early so you get a clear error ---
-var defaultConn = configuration.GetConnectionString("DefaultConnection");
-if (string.IsNullOrWhiteSpace(defaultConn))
-{
-    // Helpful explicit error — makes root cause obvious instead of a nested SqlException later
-    throw new InvalidOperationException("Connection string 'DefaultConnection' is missing. Check appsettings.json / environment variables.");
-}
-
-// Add services to the container.
-// for entity framework
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(defaultConn));
+    options.UseSqlServer(configuration.GetConnectionString("ConnStr")));
 
-// for identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+//For Identity
+IdentityBuilder identityBuilder = builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddScoped<IUserManagement, UserManagement>();
-//Add configuration for required Email
+//Add config for required email
 builder.Services.Configure<IdentityOptions>(
-    Opts => Opts.SignIn.RequireConfirmedEmail = true
-                    
-);
-builder.Services.Configure<DataProtectionTokenProviderOptions>(
-    Opts => Opts.TokenLifespan = TimeSpan.FromHours(10)
-);
+    opts => opts.SignIn.RequireConfirmedEmail = true
+    );
 
-// authentication (you will likely configure JwtBearer options here)
+builder.Services.Configure<DataProtectionTokenProviderOptions>(opts => opts.TokenLifespan = TimeSpan.FromHours(10));
+
+//Add Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
+    options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
 {
-    options.TokenValidationParameters = new TokenValidationParameters
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = false;
+    options.TokenValidationParameters = new TokenValidationParameters()
     {
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-        ValidAudience = builder.Configuration["JWT:ValidAudience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]!)
-        )
+        ClockSkew = TimeSpan.Zero,
+
+        ValidAudience = configuration["JWT:ValidAudience"],
+        ValidIssuer = configuration["JWT:ValidIssuer"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]))
     };
 });
 
-
-//Add JWT Bearer Authorization
-var jwtIssuer = builder.Configuration["Jwt:Issuer"];
-var jwtKey = builder.Configuration["Jwt:SigningKey"];
-
 //Add Email Configs
-var emailConfig = builder.Configuration
-    .GetSection("EmailConfiguration")
-    .Get<EmailConfiguration>()
-    ?? throw new Exception("Email configuration is missing");
-
+var emailConfig = configuration.GetSection("EmailConfiguration").Get<EmailConfiguration>();
 builder.Services.AddSingleton(emailConfig);
 
+builder.Services.AddScoped<NETCore.MailKit.Core.IEmailService, NETCore.MailKit.Core.EmailService>();
+builder.Services.AddScoped<IUserManagement, UserManagement>();
 
-builder.Services.AddScoped<IEmailService, EmailService>();
+// Add services to the container.
 
-// Add controllers, swagger
 builder.Services.AddControllers();
+// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
+
+builder.Services.AddSwaggerGen(option =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo {Title = "Auth API",Version = "v1" });
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    option.SwaggerDoc("v1", new OpenApiInfo { Title = "Auth API", Version = "v1" });
+    option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
         Description = "Please enter a valid token",
@@ -94,21 +75,20 @@ builder.Services.AddSwaggerGen(options =>
         BearerFormat = "JWT",
         Scheme = "Bearer"
     });
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    option.AddSecurityRequirement(new OpenApiSecurityRequirement
+{
     {
+        new OpenApiSecurityScheme
         {
-            new OpenApiSecurityScheme
+            Reference = new OpenApiReference
             {
-                Reference = new OpenApiReference
-                {
-                    Type=ReferenceType.SecurityScheme,
-                    Id="Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
-     });
-    
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        },
+        new string[] { }
+    }
+});
 });
 
 var app = builder.Build();
@@ -122,8 +102,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Ensure authentication middleware is added before authorization
 app.UseAuthentication();
+
 app.UseAuthorization();
 
 app.MapControllers();

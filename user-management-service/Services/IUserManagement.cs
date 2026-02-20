@@ -1,14 +1,18 @@
-﻿using user_management_service.Models;
+﻿using User.Management.Service.Models;
+using User.Management.Service.Models.Authentication.User;
 using user_management_Service.Models.Authentication.Login;
 using user_management_Service.Models.Authentication.SignUp;
 
-namespace user_management_service.Services
+namespace User.Management.Service.Services
 {
     public interface IUserManagement
     {
-        Task<ApiResponse<string>> CreateUserWithTokenAsync(RegisterUser registerUser);
-        Task<ApiResponse<string>> AssignRoleToUserAsync(string userId, string role);
-        Task<ApiResponse<string>> GetOtpByLoginAsync(LoginModel loginModel);
-        Task CreateUserAsync(RegisterUser registerUser);
+        Task<ApiResponse<CreateUserResponse>> CreateUserWithTokenAsync(RegisterUser registerUser);
+        Task<ApiResponse<List<string>>> AssignRoleToUserAsync(List<string> roles, ApplicationUser user);
+        Task<ApiResponse<LoginOtpResponse>> GetOtpByLoginAsync(LoginModel loginModel);
+        Task<ApiResponse<LoginResponse>> GetJwtTokenAsync(ApplicationUser user);
+        Task<ApiResponse<LoginResponse>> LoginUserWithJWTokenAsync(string otp, string userName);
+        Task<ApiResponse<LoginResponse>> RenewAccessTokenAsync(LoginResponse tokens);
+        Task AssignRoleToUserAsync(string? role, ApplicationUser user);
     }
 }

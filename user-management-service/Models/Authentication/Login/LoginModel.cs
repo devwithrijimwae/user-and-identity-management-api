@@ -4,7 +4,7 @@ namespace user_management_Service.Models.Authentication.Login
 {
     public class LoginModel
     {
-        internal readonly string Email;
+        public readonly string? Email;
 
         [Required(ErrorMessage ="User Name Is required")]
         public required string UserName { get; set; }

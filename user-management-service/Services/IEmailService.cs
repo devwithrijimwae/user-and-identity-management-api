@@ -1,9 +1,8 @@
-﻿
-using user_management_service.Models;
+﻿using User.Management.Service.Models;
 
-namespace user_management_service.Services
+namespace User.Management.Service.Services
 {
-   public interface IEmailService
+    public interface IEmailService
     {
         void SendEmail(Message message);
     }
