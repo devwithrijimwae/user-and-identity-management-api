@@ -5,8 +5,8 @@ namespace User.Management.Service.Models
     {
         public bool IsSuccess { get; set; }
         public string? Message { get; set; }
-        public int StatusCode { get; set; }
+        public int? StatusCode { get; set; }
         public T? Response { get; set; }
-        public List<string>? Data { get; internal set; }
+        public List<string>? Data { get; set; }
     }
 }

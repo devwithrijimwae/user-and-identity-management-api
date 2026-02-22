@@ -14,7 +14,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.24">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
+    </PackageReference>    
+    <PackageReference Include="NETCore.MailKit" Version="2.1.0" /><PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
   <ItemGroup>

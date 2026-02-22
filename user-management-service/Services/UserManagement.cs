@@ -7,33 +7,25 @@ using System.Security.Cryptography;
 using System.Text;
 using User.Management.Service.Models;
 using User.Management.Service.Models.Authentication.User;
+using user_management_service.Models;
 using user_management_Service.Models.Authentication.Login;
 using user_management_Service.Models.Authentication.SignUp;
 
 namespace User.Management.Service.Services
 {
-    public class UserManagement : IUserManagement
+    public class UserManagement(UserManager<ApplicationUser> userManager,
+                          SignInManager<ApplicationUser> signInManager,
+                          RoleManager<IdentityRole> roleManager,
+                          IConfiguration configuration,
+                          IEmailService emailService) : IUserManagement
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly SignInManager<ApplicationUser> _signInManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IConfiguration _configuration;
-        private readonly IEmailService _emailService;
+        private readonly UserManager<ApplicationUser> _userManager = userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager = signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager = roleManager;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly IEmailService _emailService = emailService;
 
-        public object ClaimTypesUser { get; private set; }
-
-        public UserManagement(UserManager<ApplicationUser> userManager,
-                              SignInManager<ApplicationUser> signInManager,
-                              RoleManager<IdentityRole> roleManager,
-                              IConfiguration configuration,
-                              IEmailService emailService)
-        {
-            _userManager = userManager;
-            _signInManager = signInManager;
-            _roleManager = roleManager;
-            _configuration = configuration;
-            _emailService = emailService;
-        }
+        public object? ClaimTypesUser { get; private set; }
 
         #region User Creation & Role Assignment
 
@@ -158,9 +150,9 @@ namespace User.Management.Service.Services
 
         public async Task<ApiResponse<LoginResponse>> GetJwtTokenAsync(ApplicationUser user)
         {
+
             var authClaims = new List<Claim>
             {
-               new Claim(ClaimTypes.Surname, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             };
 
@@ -252,12 +244,6 @@ namespace User.Management.Service.Services
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.ValidateToken(accessToken, tokenValidationParameters, out SecurityToken _);
         }
-
-        public Task<ApiResponse<List<string>>> AssignRoleToUserAsync(List<string> roles, ApplicationUser user)
-        {
-            throw new NotImplementedException();
-        }
-
         Task IUserManagement.AssignRoleToUserAsync(string? role, ApplicationUser user)
         {
             return AssignRoleToUserAsync(role, user);

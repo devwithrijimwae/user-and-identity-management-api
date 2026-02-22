@@ -1,4 +1,4 @@
-﻿using User.Management.Service.Services;
+﻿using user_management_service.Models;
 
 namespace User.Management.Service.Models.Authentication.User
 {
